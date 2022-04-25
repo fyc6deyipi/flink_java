@@ -5,13 +5,13 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Properties;
 
-public class kafkaUtils {
+public class KafkaUtils {
 
 
     private static final HashMap<String,String> map =  new HashMap<String, String>(5);
     private static Properties properties;
     static {
-        InputStream is = kafkaUtils.class.getClassLoader().getResourceAsStream("kafka.properties");
+        InputStream is = KafkaUtils.class.getClassLoader().getResourceAsStream("kafka.properties");
         properties = new Properties();
         try {
             properties.load(is);
@@ -43,7 +43,7 @@ public class kafkaUtils {
         return properties;
     }
     public static Properties getTopicPropertise(){
-        InputStream is = kafkaUtils.class.getClassLoader().getResourceAsStream("kafka_topic.properties");
+        InputStream is = KafkaUtils.class.getClassLoader().getResourceAsStream("kafka_topic.properties");
         properties= new Properties();
         try {
             properties.load(is);
