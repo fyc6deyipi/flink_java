@@ -64,7 +64,7 @@ public class UserBehavior {
         this.user_id=jsonObject.getString("user_id");
         this.item_id=jsonObject.getString("item_id");
         this.category_id=jsonObject.getString("category_id");
-        this.category_id=jsonObject.getString("category_id");
+        this.category_id=jsonObject.getString("behavior");
         this.ts=jsonObject.getString("ts");
         this.json=json;
         return this;

@@ -13,16 +13,15 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.SlidingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingAlignedProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
 
-import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 public class kafka2mysql {
     public static void main(String[] args) throws Exception {
@@ -42,19 +41,18 @@ public class kafka2mysql {
         //ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION:表示一旦Flink处理程序被cancel后，会保留Checkpoint数据，以便根据实际需要恢复到指定的Checkpoint
         //ExternalizedCheckpointCleanup.DELETE_ON_CANCELLATION: 表示一旦Flink处理程序被cancel后，会删除Checkpoint数据，只有job执行失败的时候才会保存checkpoint
         env.getCheckpointConfig().enableExternalizedCheckpoints(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
-        SingleOutputStreamOperator<List<UserBehavior>> streamOperator = env.addSource(new FlinkKafkaConsumer<String>(
+        env.addSource(new FlinkKafkaConsumer<String>(
                         KAFKA_TOPICS.user_behavior,
                         new SimpleStringSchema(),
                         KafkaUtils.getKafkaPropertise()))
                 .map((MapFunction<String, UserBehavior>) s -> new UserBehavior().setByJson(s))
-                .timeWindowAll(Time.seconds(3))
-                .process(new ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, TimeWindow>() {
+                .countWindowAll(500)
+                .process(new ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, GlobalWindow>() {
                     @Override
-                    public void process(ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, TimeWindow>.Context context, Iterable<UserBehavior> iterable, Collector<List<UserBehavior>> collector) throws Exception {
+                    public void process(ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, GlobalWindow>.Context context, Iterable<UserBehavior> iterable, Collector<List<UserBehavior>> collector) throws Exception {
                         collector.collect((List<UserBehavior>) IteratorUtils.toList(iterable.iterator()));
                     }
-                });
-        streamOperator.print();
+                }).addSink(new MysqlSink()).setParallelism(2);
         env.execute();
     }
 }

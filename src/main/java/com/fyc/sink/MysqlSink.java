@@ -18,45 +18,37 @@ public class MysqlSink extends RichSinkFunction<List<UserBehavior>> {
 
     @Override
     public void open(Configuration parameters) throws Exception {
-        System.out.println("open");
-        super.open(parameters);
         dataSource=new BasicDataSource();
         connection=getConnection(dataSource);
-        String sql = "truncate table user_behavior";
-        Statement statement = connection.createStatement();
-        statement.execute(sql);
-        statement.close();
 
-        sql="insert into user_behavior (user_id,item_id,category_id,behavior,ts)";
+
+        String sql="insert into user_behavior values (?,?,?,?,?)";
         this.ps=connection.prepareStatement(sql);
-        System.out.println("====");
     }
 
     @Override
     public void close() throws Exception {
         System.out.println("colse");
         //关闭连接和释放资源
-        if (ps != null) {
-            ps.close();
-        }
+
         if (connection != null) {
             connection.close();
         }
-        super.close();
+        if (ps != null) {
+            ps.close();
+        }
     }
 
     @Override
     public void invoke(List<UserBehavior> value, Context context) throws Exception {
-        System.out.println("start");
         for (UserBehavior u:value) {
-            ps.setString(0,u.getUser_id());
-            ps.setString(1,u.getItem_id());
-            ps.setString(2,u.getCategory_id());
-            ps.setString(3,u.getBehavior());
-            ps.setTimestamp(4,
+            ps.setString(1,u.getUser_id());
+            ps.setString(2,u.getItem_id());
+            ps.setString(3,u.getCategory_id());
+            ps.setString(4,u.getBehavior());
+            ps.setTimestamp(5,
                     new Timestamp(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(u.getTs()).getTime()));
             ps.addBatch();
-            System.out.println(1111);
         }
         int[] nums = ps.executeBatch();
 
