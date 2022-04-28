@@ -64,7 +64,7 @@ public class UserBehavior {
         this.user_id=jsonObject.getString("user_id");
         this.item_id=jsonObject.getString("item_id");
         this.category_id=jsonObject.getString("category_id");
-        this.category_id=jsonObject.getString("behavior");
+        this.behavior=jsonObject.getString("behavior");
         this.ts=jsonObject.getString("ts");
         this.json=json;
         return this;
@@ -75,8 +75,13 @@ public class UserBehavior {
                 "user_id='" + user_id + '\'' +
                 ", item_id='" + item_id + '\'' +
                 ", category_id='" + category_id + '\'' +
-                ", behavior='" + category_id + '\'' +
+                ", behavior='" + behavior + '\'' +
                 ", ts='" + ts + '\'' +
                 '}';
+    }
+
+    @Override
+    public int hashCode() {
+        return (this.user_id+this.ts).hashCode();
     }
 }

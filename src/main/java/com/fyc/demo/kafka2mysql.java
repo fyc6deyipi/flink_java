@@ -20,11 +20,15 @@ import org.apache.flink.streaming.api.windowing.windows.GlobalWindow;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class kafka2mysql {
+    private static final Logger log = LoggerFactory.getLogger(kafka2mysql.class);
     public static void main(String[] args) throws Exception {
+        log.info("-----------------> start");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(new Configuration());
         // 每隔1000 ms进行启动一个检查点【设置checkpoint的周期】
         env.enableCheckpointing(1000);
