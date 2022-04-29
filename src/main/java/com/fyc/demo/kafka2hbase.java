@@ -1,11 +1,12 @@
 package com.fyc.demo;
 
+
+import com.fyc.pojo.UserBehavior;
+import com.fyc.sink.HbaseSink;
 import com.fyc.tools.KAFKA_TOPICS;
 import com.fyc.tools.KafkaUtils;
-import org.apache.flink.api.common.eventtime.SerializableTimestampAssigner;
-import org.apache.flink.api.common.eventtime.WatermarkGenerator;
-import org.apache.flink.api.common.eventtime.WatermarkGeneratorSupplier;
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.commons.collections.IteratorUtils;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
 import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.configuration.Configuration;
@@ -13,16 +14,21 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.windowing.ProcessAllWindowFunction;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
+import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+import org.apache.flink.util.Collector;
 
-public class kafka2redis {
-    public static void main(String[] args) {
+import java.util.List;
+
+public class kafka2hbase {
+    public static void main(String[] args) throws Exception {
         Configuration configuration = new Configuration();
         configuration.setBoolean(ConfigConstants.LOCAL_START_WEBSERVER,true);
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironmentWithWebUI(configuration);
         env.setParallelism(3);
-        //水位线周期生成时间，默认200ms
-        env.getConfig().setAutoWatermarkInterval(200L);
         // 每隔1000 ms进行启动一个检查点【设置checkpoint的周期】
         env.enableCheckpointing(1000);
         // 高级选项：
@@ -44,8 +50,17 @@ public class kafka2redis {
                 KafkaUtils.getKafkaPropertise()
         );
         DataStreamSource<String> stream = env.addSource(consumer);
-        stream.assignTimestampsAndWatermarks(WatermarkStrategy.forMonotonousTimestamps()
-                .withTimestampAssigner((SerializableTimestampAssigner<String>) (element, recordTimestamp) -> 0));
+        stream.map((MapFunction<String, UserBehavior>) value -> new UserBehavior().setByJson(value))
+                .windowAll(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+                .process(new ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, TimeWindow>() {
+                    @Override
+                    public void process(ProcessAllWindowFunction<UserBehavior, List<UserBehavior>, TimeWindow>.Context context, Iterable<UserBehavior> iterable, Collector<List<UserBehavior>> collector) throws Exception {
+                        collector.collect(IteratorUtils.toList(iterable.iterator()));
+                    }
+                }).addSink(new HbaseSink()).setParallelism(1);
+        env.execute()
+        ;
 
     }
 }
+
