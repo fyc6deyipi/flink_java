@@ -3,6 +3,9 @@ package com.fyc.pojo;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+
 public class UserBehavior {
     public String user_id;
     public String item_id;
@@ -10,12 +13,27 @@ public class UserBehavior {
     public String behavior;
     public String ts;
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public long timestamp =0;
+
     public UserBehavior(String user_id, String item_id, String category_id, String behavior, String ts) {
         this.user_id = user_id;
         this.item_id = item_id;
         this.category_id = category_id;
         this.behavior = behavior;
         this.ts = ts;
+        try {
+            this.timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(this.ts).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
     }
     public UserBehavior(){}
 
@@ -67,6 +85,11 @@ public class UserBehavior {
         this.behavior=jsonObject.getString("behavior");
         this.ts=jsonObject.getString("ts");
         this.json=json;
+        try {
+            this.timestamp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").parse(this.ts).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
         return this;
     }
     @Override
